@@ -13,6 +13,65 @@ from contextlib import contextmanager
 
 from distutils import file_util
 
+import subprocess
+from subprocess import Popen, PIPE
+import threading
+
+class LocalShell(object):
+    def __init__(self, cmd, executable, cwd, env=None):
+        self.cmd = cmd
+        self.executable = executable
+        self.cwd = cwd
+        if not env:
+            self.env = os.environ.copy()
+        else:
+            self.env = env
+
+    def run_output_only(self):
+        proc = Popen(self.cmd, bufsize=1, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, env=self.env, cwd=self.cwd, executable=self.executable)
+        output, errput = proc.communicate()
+        if output is not None:
+            output = output.decode("utf-8", errors="ignore")
+            print(output)
+        if errput is not None:
+            errput = errput.decode("utf-8", errors="ignore")
+            print(errput)
+
+    def run(self):
+        proc = Popen(self.cmd, bufsize=1, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, env=self.env, cwd=self.cwd, executable=self.executable)
+        sys.stdout.write("Started Local Terminal...\r\n\r\n")
+
+        def writeall(proc):
+            while True:
+                # print("read data: ")
+                data = proc.stdout.read(1)
+                if not data:
+                    break
+                else:
+                    try:
+                        data_write = data.decode("utf-8")
+                    except UnicodeDecodeError:
+                        break
+                sys.stdout.write(data_write)
+                sys.stdout.flush()
+
+        writer = threading.Thread(target=writeall, args=(proc,))
+        writer.start()
+
+        try:
+            while True:
+                d = sys.stdin.read(1)
+                if not d:
+                    break
+                self._write(proc, d.encode())
+
+        except EOFError:
+            pass
+
+    def _write(self, process, message):
+        process.stdin.write(message)
+        process.stdin.flush()
+
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
@@ -763,6 +822,7 @@ def run_cmd(
     timeout=None,
     executable=None,
     shell=True,
+    interactive=False,
 ):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
@@ -821,6 +881,30 @@ def run_cmd(
         }
     )
 
+    if interactive:
+        #proc = subprocess.Popen(
+        #        cmd,
+        #        shell=shell,
+        #        stdout=arg_stdout,
+        #        stderr=arg_stderr,
+        #        stdin=stdin,
+        #        cwd=from_dir,
+        #        executable=executable,
+        #        env=env,
+        #    )
+        #proc = Popen(cmd, bufsize=1, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=shell, env=env, cwd=from_dir, executable=executable)
+        interactive_shell = LocalShell(cmd, executable, from_dir, env)
+        interactive_shell.run()
+        #output, errput = proc.communicate(input_str)
+        #if output is not None:
+        #    output = output.decode("utf-8", errors="ignore")
+        #if errput is not None:
+        #    errput = errput.decode("utf-8", errors="ignore")
+
+        #print(output)
+        #print(errput)
+        return None, None, None
+
     if timeout:
         with Timeout(timeout):
             proc = subprocess.Popen(
@@ -869,6 +953,9 @@ def run_cmd(
         output = output.strip()
     if errput:
         errput = errput.strip()
+
+    print(output)
+    print(errput)
 
     stat = proc.wait()
     if isinstance(arg_stdout, io.IOBase):
