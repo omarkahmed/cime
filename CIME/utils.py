@@ -954,8 +954,9 @@ def run_cmd(
     if errput:
         errput = errput.strip()
 
-    print(output)
-    print(errput)
+    if interactive:
+        print(output)
+        print(errput)
 
     stat = proc.wait()
     if isinstance(arg_stdout, io.IOBase):

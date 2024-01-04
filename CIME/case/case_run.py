@@ -4,7 +4,7 @@ case_run is a member of Class Case
 from CIME.XML.standard_module_setup import *
 from CIME.config import Config
 from CIME.utils import gzip_existing_file, new_lid, run_and_log_case_status
-from CIME.utils import run_sub_or_cmd, append_status, safe_copy, model_log, CIMEError, run_cmd
+from CIME.utils import run_sub_or_cmd, append_status, safe_copy, model_log, CIMEError
 from CIME.utils import get_model, batch_jobid
 from CIME.get_timing import get_timing
 
@@ -90,7 +90,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 ###############################################################################
 def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0, interactive=True):
     ###############################################################################
-
+    
     model_log(
         "e3sm",
         logger,
