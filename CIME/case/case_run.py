@@ -88,7 +88,7 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
 
 
 ###############################################################################
-def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
+def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0, interactive=True):
     ###############################################################################
 
     model_log(
@@ -113,6 +113,10 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
     logger.info("run command is {} ".format(cmd))
 
     rundir = case.get_value("RUNDIR")
+
+    if interactive:
+        run_cmd(cmd, from_dir=rundir, interactive=True)
+        return lid
 
     # MPIRUN_RETRY_REGEX allows the mpi command to be reattempted if the
     # failure described by that regular expression is matched in the model log
